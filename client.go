@@ -59,36 +59,26 @@ func CreateClient(host, port string) *Client {
 }
 
 func (client *Client) AddListener(onData func([]byte)) {
-	log.Printf("[client] Setting listener for %v\n", client)
-	buf := make([]byte, 100)
+	log.Printf("[client] Setting listener\n")
 	for {
-		log.Printf("[client] Waiting for data...\n")
-		n, err := client.Conn.Read(buf)
-		if err != nil {
-			log.Panicf("[client] Error: %+v", err)
-		}
-
-		onData(buf[:n])
+		// log.Printf("[client] Waiting for data...\n")
+		data := client.readPayload()
+		onData(data)
 	}
 }
 
 func (c *Client) makeRequest(payload []byte) []byte {
-	reqSize := c.intToBytes(len(payload))
+	c.writePayload(payload)
+	return c.readPayload()
+}
 
-	// log.Printf("[client] Sending size: %v\n", reqSize)
-	_, err := c.Conn.Write(reqSize)
-	if err != nil {
-		log.Panic("[client] Error: Unable to send request size")
-	}
-
-	// log.Printf("[client] Request Payload: %v\n", payload)
-	n, err := c.Conn.Write(payload)
-	if err != nil {
-		log.Panic("[client] Error: Unable to send payload")
-	}
-
+func (c *Client) readPayload() []byte {
 	buf := make([]byte, 100)
-	n, err = c.Conn.Read(buf)
+	n, err := c.Conn.Read(buf)
+	if err != nil {
+		log.Panicf("[client] Problems reading from network: %+v\n", err)
+	}
+
 	bytesToRead := int(buf[0])
 
 	resp := make([]byte, bytesToRead+100)
@@ -106,6 +96,24 @@ func (c *Client) makeRequest(payload []byte) []byte {
 	}
 
 	return resp
+}
+
+func (c *Client) writePayload(payload []byte) int {
+	reqSize := c.intToBytes(len(payload))
+
+	// log.Printf("[client] Sending size: %v\n", reqSize)
+	_, err := c.Conn.Write(reqSize)
+	if err != nil {
+		log.Panic("[client] Error: Unable to send request size")
+	}
+
+	// log.Printf("[client>] %v\n", payload)
+	n, err := c.Conn.Write(payload)
+	if err != nil {
+		log.Panic("[client] Error: Unable to send payload")
+	}
+
+	return n
 }
 
 func (c *Client) makeSecret(code string) []byte {

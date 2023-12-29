@@ -75,18 +75,15 @@ func (m *RemoteManager) remoteSetActivePayload() []byte {
 	return data
 }
 
-func (m *RemoteManager) RespondPing() *RemoteMessage {
-	payload := m.remotePingResponsePayload()
-	rawResponse := m.client.makeRequest(payload)
-	response := m.ProcessRemoteResponse(rawResponse)
-
-	return response
+func (m *RemoteManager) RespondPing(value int32) {
+	payload := m.remotePingResponsePayload(value)
+	m.client.writePayload(payload)
 }
 
-func (m *RemoteManager) remotePingResponsePayload() []byte {
+func (m *RemoteManager) remotePingResponsePayload(value int32) []byte {
 	req := &RemoteMessage{
 		RemotePingResponse: &RemotePingResponse{
-			Val1: 25,
+			Val1: value,
 		},
 	}
 
@@ -108,7 +105,7 @@ func (m *RemoteManager) VolumeUp() *RemoteMessage {
 func (m *RemoteManager) remoteAdjustVolumeLevelPayload() []byte {
 	req := &RemoteMessage{
 		RemoteKeyInject: &RemoteKeyInject{
-			KeyCode:   RemoteKeyCode_KEYCODE_HOME,
+			KeyCode:   RemoteKeyCode_KEYCODE_VOLUME_UP,
 			Direction: RemoteDirection_SHORT,
 		},
 	}
@@ -125,8 +122,8 @@ func (m *RemoteManager) ProcessRemoteResponse(response []byte) *RemoteMessage {
 	msg := RemoteMessage{}
 	proto.Unmarshal(response, &msg)
 
-	log.Printf("[*] bytes: %v\n", response)
-	log.Printf("[*] struct: %+v\n", msg)
+	// log.Printf("[*] bytes: %v\n", response)
+	// log.Printf("[*] struct: %+v\n", msg)
 
 	return &msg
 }

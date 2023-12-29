@@ -20,14 +20,11 @@ func main() {
 
 	if paring.Pair() {
 		log.Printf("[pairing] Pairing success!")
+		pairingClient.Conn.Close()
 	} else {
 		log.Printf("[pairing] Pairing failed!")
 		os.Exit(1)
 	}
-
-	go pairingClient.AddListener(func(b []byte) {
-		log.Printf("[<pairing] %v\n", b)
-	})
 
 	remoteClient := h.CreateClient(ip, remotePort)
 	defer remoteClient.Conn.Close()
@@ -44,17 +41,17 @@ func main() {
 	}
 
 	go remoteClient.AddListener(func(b []byte) {
-		log.Printf("[<remote] %v\n", b)
+		msg := remote.ProcessRemoteResponse(b)
 
-		remote.ProcessRemoteResponse(b)
-
-		if b[1] == 66 && b[2] == 8 {
-			remote.RespondPing()
+		if msg.RemotePingRequest != nil {
+			remote.RespondPing(msg.RemotePingRequest.Val1)
+		} else {
+			log.Printf("[main] %+v\n", msg)
 		}
 	})
 
-	time.Sleep(10 * time.Second)
-	remote.VolumeUp()
+	// time.Sleep(10 * time.Second)
+	// remote.VolumeUp()
 
 	for {
 		time.Sleep(1 * time.Second)

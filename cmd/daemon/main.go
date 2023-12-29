@@ -9,7 +9,8 @@ import (
 )
 
 func main() {
-	ip := "192.168.0.6"
+	ip := os.Args[1] // requires IP address for the Android TV
+
 	pairingPort := "6467"
 	remotePort := "6466"
 
